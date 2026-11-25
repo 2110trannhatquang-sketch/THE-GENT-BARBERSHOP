@@ -14,6 +14,7 @@ import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 
 const API_URL = "http://localhost:5000/api";
+
 const getAuthHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("salon_token")}`
 });
@@ -58,13 +59,17 @@ export default function Appointments() {
 
       const headers = getAuthHeaders();
 
-const [appointmentRes, customerRes, staffRes, serviceRes] =
-  await Promise.all([
-    fetch(`${API_URL}/appointments`, { headers }),
-    fetch(`${API_URL}/customers`, { headers }),
-    fetch(`${API_URL}/staff`, { headers }),
-    fetch(`${API_URL}/services`, { headers })
-  ]);
+      const [
+        appointmentRes,
+        customerRes,
+        staffRes,
+        serviceRes
+      ] = await Promise.all([
+        fetch(`${API_URL}/appointments`, { headers }),
+        fetch(`${API_URL}/customers`, { headers }),
+        fetch(`${API_URL}/staff`, { headers }),
+        fetch(`${API_URL}/services`, { headers })
+      ]);
 
       const [
         appointmentData,
@@ -113,10 +118,11 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
 
       // Danh sách nhân viên
       setStaffList(staffData.data || []);
-      // Danh sách dịch vụ
+
+      // Danh sách dịch vụ đang hoạt động
       setServices(
         (serviceData.data || []).filter(
-          x => x.status === "ACTIVE"
+          service => service.status === "ACTIVE"
         )
       );
 
@@ -132,14 +138,14 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
     loadData();
   }, []);
 
-  // Tìm kiếm và lọc
+  // Tìm kiếm và lọc lịch hẹn
   const filtered = useMemo(() => {
-    return items.filter(x => {
+    return items.filter(item => {
       const matchesFilter =
-        filter === "ALL" || x.status === filter;
+        filter === "ALL" || item.status === filter;
 
       const matchesQuery =
-        `${x.customer} ${x.phone} ${x.id}`
+        `${item.customer} ${item.phone} ${item.id}`
           .toLowerCase()
           .includes(query.toLowerCase());
 
@@ -149,32 +155,52 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
 
   // Dịch vụ đang chọn
   const selectedService = services.find(
-    x => String(x.id) === String(form.service_id)
+    service => String(service.id) === String(form.service_id)
   );
 
+  
   // Tạo lịch hẹn và hóa đơn
   const addAppointment = async (e) => {
     e.preventDefault();
 
+    const customerId = Number(form.customer_id);
+    const serviceId = Number(form.service_id);
+
+    // Chỉ bắt buộc khách hàng, dịch vụ, ngày và giờ
+    if (
+      !customerId ||
+      !serviceId ||
+      !form.appointment_date ||
+      !form.start_time
+    ) {
+      alert("Vui lòng chọn khách hàng, dịch vụ, ngày và giờ.");
+      return;
+    }
+console.log("DỮ LIỆU GỬI LÊN BACKEND:", {
+  customer_id: customerId,
+  staff_id: form.staff_id || null,
+  service_ids: [serviceId],
+  appointment_date: form.appointment_date,
+  start_time: form.start_time
+});
     try {
-      const response = await fetch(
-        `${API_URL}/appointments`,
-        {
-          method: "POST",
-          headers: {
-  "Content-Type": "application/json",
-  ...getAuthHeaders()
-},
-          body: JSON.stringify({
-            customer_id: Number(form.customer_id),
-            staff_id: Number(form.staff_id),
-            service_ids: [Number(form.service_id)],
-            appointment_date: form.appointment_date,
-            start_time: form.start_time,
-            note: form.note
-          })
-        }
-      );
+      const response = await fetch(`${API_URL}/appointments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+  customer_id: Number(form.customer_id),
+  staff_id: form.staff_id
+    ? Number(form.staff_id)
+    : null,
+  service_ids: [Number(form.service_id)],
+  appointment_date: form.appointment_date,
+  start_time: form.start_time,
+  note: form.note
+})
+      });
 
       const result = await response.json();
 
@@ -187,6 +213,7 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
       await loadData();
 
       setShowModal(false);
+
       setForm({
         ...emptyForm,
         appointment_date: getToday()
@@ -204,17 +231,18 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
     }
   };
 
-  // Cập nhật trạng thái qua Backend
+
+  // Cập nhật trạng thái lịch hẹn
   const updateStatus = async (appointment, status) => {
     try {
       const response = await fetch(
         `${API_URL}/appointments/${appointment.db_id}/status`,
         {
           method: "PATCH",
-        headers: {
-  "Content-Type": "application/json",
-  ...getAuthHeaders()
-},
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders()
+          },
           body: JSON.stringify({ status })
         }
       );
@@ -318,6 +346,7 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
             <div className="empty-state">
               {error}
               <br />
+
               <button
                 className="button button-outline small"
                 onClick={loadData}
@@ -342,80 +371,80 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
                 </thead>
 
                 <tbody>
-                  {filtered.map(x => (
-                    <tr key={x.db_id}>
+                  {filtered.map(item => (
+                    <tr key={item.db_id}>
                       <td>
-                        <b>{x.id}</b>
+                        <b>{item.id}</b>
                       </td>
 
                       <td>
-                        <b>{x.customer}</b>
-                        <small>{x.phone}</small>
+                        <b>{item.customer}</b>
+                        <small>{item.phone}</small>
                       </td>
 
-                      <td>{x.service}</td>
+                      <td>{item.service}</td>
 
-                      <td>{x.staff}</td>
+                      <td>{item.staff}</td>
 
                       <td>
-                        {x.date
-                          ? x.date.split("-").reverse().join("/")
+                        {item.date
+                          ? item.date.split("-").reverse().join("/")
                           : ""}
-                        <small>{x.time}</small>
+                        <small>{item.time}</small>
                       </td>
 
                       <td>
-                        <b>{formatMoney(x.amount)}</b>
+                        <b>{formatMoney(item.amount)}</b>
                       </td>
 
                       <td>
-                        <StatusBadge status={x.status} />
+                        <StatusBadge status={item.status} />
                       </td>
 
                       <td>
                         <div className="row-actions">
-                          {x.status === "PENDING" && (
+                          {item.status === "PENDING" && (
                             <button
                               title="Xác nhận"
                               className="action-btn success"
                               onClick={() =>
-                                updateStatus(x, "CONFIRMED")
+                                updateStatus(item, "CONFIRMED")
                               }
                             >
                               <Check size={16} />
                             </button>
                           )}
 
-                          {["PENDING", "CONFIRMED"].includes(x.status) && (
+                          {["PENDING", "CONFIRMED"].includes(item.status) && (
                             <button
                               title="Hủy lịch"
                               className="action-btn danger"
                               onClick={() =>
-                                updateStatus(x, "CANCELLED")
+                                updateStatus(item, "CANCELLED")
                               }
                             >
                               <X size={16} />
                             </button>
                           )}
 
-                          {x.status === "CONFIRMED" && (
+                          {item.status === "CONFIRMED" && (
                             <button
                               title="Bắt đầu"
                               className="action-btn"
                               onClick={() =>
-                                updateStatus(x, "IN_PROGRESS")
+                                updateStatus(item, "IN_PROGRESS")
                               }
                             >
                               Bắt đầu
                             </button>
                           )}
 
-                          {x.status === "IN_PROGRESS" && (
+                          {item.status === "IN_PROGRESS" && (
                             <button
                               title="Hoàn thành"
                               className="action-btn success"
                               onClick={() =>
-                                updateStatus(x, "COMPLETED")
+                                updateStatus(item, "COMPLETED")
                               }
                             >
                               Xong
@@ -448,6 +477,7 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
             className="form-grid"
             onSubmit={addAppointment}
           >
+            {/* Khách hàng */}
             <label>
               Khách hàng
 
@@ -461,42 +491,54 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
                   })
                 }
               >
-                <option value="">-- Chọn khách hàng --</option>
+                <option value="">
+                  -- Chọn khách hàng --
+                </option>
 
-                {customers.map(customer => (
-                  <option
-                    key={customer.db_id}
-                    value={customer.db_id}
-                  >
-                    {customer.name} - {customer.phone}
-                  </option>
-                ))}
+                {customers.map(customer => {
+  const customerId = customer.db_id ?? customer.id;
+  const customerName =
+    customer.name || customer.full_name || "Khách hàng";
+
+  return (
+    <option
+      key={customerId}
+      value={customerId}
+    >
+      {customerName} - {customer.phone}
+    </option>
+  );
+})}
               </select>
             </label>
 
-            <label>
-              Nhân viên
+           {/* Nhân viên - KHÔNG BẮT BUỘC */}
+<label>
+  Nhân viên
 
-              <select
-                required
-                value={form.staff_id}
-                onChange={e =>
-                  setForm({
-                    ...form,
-                    staff_id: e.target.value
-                  })
-                }
-              >
-                <option value="">-- Chọn nhân viên --</option>
+  <select
+    value={form.staff_id}
+    onChange={e =>
+      setForm({
+        ...form,
+        staff_id: e.target.value
+      })
+    }
+  >
+    <option value="">Tự động phân công nhân viên</option>
 
-                {staffList.map(staff => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.name || staff.full_name || staff.job_title}
-                  </option>
-                ))}
-              </select>
-            </label>
+    {staffList.map(staff => {
+      const staffId = staff.db_id ?? staff.id;
 
+      return (
+        <option key={staffId} value={staffId}>
+          {staff.name || staff.full_name || staff.job_title}
+        </option>
+      );
+    })}
+  </select>
+</label>
+            {/* Dịch vụ */}
             <label>
               Dịch vụ
 
@@ -510,16 +552,26 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
                   })
                 }
               >
-                <option value="">-- Chọn dịch vụ --</option>
+                <option value="">
+                  -- Chọn dịch vụ --
+                </option>
 
-                {services.map(service => (
-                  <option key={service.id} value={service.id}>
-                    {service.service_name || service.name}
-                  </option>
-                ))}
+                {services.map(service => {
+  const serviceId = service.id ?? service.db_id;
+
+  return (
+    <option
+      key={serviceId}
+      value={serviceId}
+    >
+      {service.service_name || service.name}
+    </option>
+  );
+})}
               </select>
             </label>
 
+            {/* Giá tiền */}
             <label>
               Giá tiền (VNĐ)
 
@@ -534,6 +586,7 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
               />
             </label>
 
+            {/* Ngày */}
             <label>
               Ngày
 
@@ -551,6 +604,7 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
               />
             </label>
 
+            {/* Giờ */}
             <label>
               Giờ
 
@@ -569,6 +623,7 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
               />
             </label>
 
+            {/* Ghi chú */}
             <label className="full-field">
               Ghi chú
 
@@ -584,6 +639,7 @@ const [appointmentRes, customerRes, staffRes, serviceRes] =
               />
             </label>
 
+            {/* Nút thao tác */}
             <div className="form-actions">
               <button
                 type="button"

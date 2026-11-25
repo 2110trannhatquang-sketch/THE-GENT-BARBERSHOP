@@ -14,6 +14,12 @@ const authRoutes = require("./routes/auth");
 
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  if (req.method === "POST" && req.originalUrl === "/api/appointments") {
+    console.log("CO REQUEST TAO LICH:", req.body);
+  }
+  next();
+});
 app.use("/api/staff", staffRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/appointments", appointmentRoutes);
