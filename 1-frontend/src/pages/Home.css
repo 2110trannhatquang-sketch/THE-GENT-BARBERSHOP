@@ -1294,8 +1294,8 @@
 /* TOAST */
 .shop-toast {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 88px;
+  right: 26px;
   z-index: 250;
   background: #1c1c19;
   color: var(--gent-cream);
@@ -1304,6 +1304,38 @@
   border-radius: 8px;
   font-size: 13px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
+/* FLOATING CART BUTTON */
+.floating-cart-btn {
+  position: fixed;
+  right: 26px;
+  bottom: 26px;
+  z-index: 220;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: #1a1a17;
+  color: var(--gent-cream);
+  border: 1px solid var(--gent-gold);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.floating-cart-btn:hover {
+  transform: translateY(-2px);
+  background: var(--gent-gold);
+  color: #11110f;
+}
+
+.floating-cart-btn:hover .cart-badge {
+  background: #11110f;
+  color: var(--gent-gold);
 }
 
 /* SHOP SECTION */

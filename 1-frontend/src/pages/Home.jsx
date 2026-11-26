@@ -178,6 +178,18 @@ export default function Home() {
     <main className="home-page">
       {toast && <div className="shop-toast">{toast}</div>}
 
+      {/* NÚT GIỎ HÀNG NỔI KHI CUỘN TRANG */}
+      <button
+        type="button"
+        className="floating-cart-btn"
+        onClick={openCartDrawer}
+        aria-label="Mở giỏ hàng nhanh"
+      >
+        <ShoppingBag size={19} />
+        <span>Giỏ hàng</span>
+        {totalItems > 0 && <b className="cart-badge">{totalItems}</b>}
+      </button>
+
       {/* HEADER */}
       <header className="home-header">
         <Link to="/" className="home-logo">
