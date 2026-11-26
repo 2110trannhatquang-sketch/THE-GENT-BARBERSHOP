@@ -211,34 +211,40 @@ export default function Revenue() {
 
   return (
     <>
-      {/* Bộ lọc Tuần / Tháng / Năm (2026 - 2027) */}
+      {/* Bộ lọc Tuần / Tháng / Năm (gộp thành 1 ô chọn) */}
       <div className="toolbar">
-        <button
-          type="button"
-          className={`button ${period === "week" ? "button-dark" : "button-outline"}`}
-          onClick={() => setPeriod("week")}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            background: "#fff",
+            border: "1px solid #e9e6df",
+            borderRadius: 7,
+            padding: "0 12px",
+            height: 38
+          }}
         >
-          <Calendar size={15} />
-          Theo Tuần
-        </button>
-
-        <button
-          type="button"
-          className={`button ${period === "month" ? "button-dark" : "button-outline"}`}
-          onClick={() => setPeriod("month")}
-        >
-          <Calendar size={15} />
-          Theo Tháng
-        </button>
-
-        <button
-          type="button"
-          className={`button ${period === "year" ? "button-dark" : "button-outline"}`}
-          onClick={() => setPeriod("year")}
-        >
-          <Calendar size={15} />
-          Theo Năm
-        </button>
+          <Calendar size={15} style={{ color: "#b28b4e" }} />
+          <span style={{ fontSize: 11, color: "#858179" }}>Xem theo:</span>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            style={{
+              border: 0,
+              outline: 0,
+              background: "transparent",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#242321",
+              cursor: "pointer"
+            }}
+          >
+            <option value="week">Theo Tuần</option>
+            <option value="month">Theo Tháng</option>
+            <option value="year">Theo Năm</option>
+          </select>
+        </div>
 
         {period === "week" && (
           <input
@@ -248,7 +254,6 @@ export default function Revenue() {
             max="2027-W52"
             value={selectedWeek}
             onChange={(e) => e.target.value && setSelectedWeek(e.target.value)}
-            style={{ marginLeft: "auto" }}
           />
         )}
 
@@ -260,7 +265,6 @@ export default function Revenue() {
             max="2027-12"
             value={selectedMonth}
             onChange={(e) => e.target.value && setSelectedMonth(e.target.value)}
-            style={{ marginLeft: "auto" }}
           />
         )}
 
@@ -269,7 +273,6 @@ export default function Revenue() {
             className="select-control"
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            style={{ marginLeft: "auto" }}
           >
             <option value="2026">Năm 2026</option>
             <option value="2027">Năm 2027</option>

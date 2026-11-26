@@ -67,7 +67,7 @@ export default function Login() {
       }
       setMessage(
         error.message === "Failed to fetch"
-          ? "Sai tài khoản hoặc mật khẩu (tài khoản mặc định: admin / 123456)."
+          ? "Sai tài khoản hoặc mật khẩu."
           : error.message || "Sai tài khoản hoặc mật khẩu."
       );
     } finally {
@@ -97,7 +97,7 @@ export default function Login() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Nhập tên đăng nhập (admin)"
+                placeholder="Nhập tên đăng nhập"
               />
             </div>
           </label>
@@ -111,7 +111,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Nhập mật khẩu (123456)"
+                placeholder="Nhập mật khẩu"
               />
             </div>
           </label>
@@ -125,10 +125,6 @@ export default function Login() {
 
           {message && <div className="inline-notice">{message}</div>}
         </form>
-
-        <div className="inline-notice" style={{ marginTop: 14, textAlign: "center" }}>
-          Tài khoản quản trị: <b>admin</b> / Mật khẩu: <b>123456</b>
-        </div>
 
         <button
           className="text-link back-home"
