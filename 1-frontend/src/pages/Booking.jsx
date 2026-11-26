@@ -1,10 +1,12 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Scissors,
   CalendarDays,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft
 } from "lucide-react";
 
 import {
@@ -216,16 +218,17 @@ export default function Booking() {
   return (
     <div className="booking-page">
       <header className="public-nav">
-        <a className="public-brand" href="/booking">
+        <Link className="public-brand" to="/">
           <span className="brand-mark">
             <Scissors size={21} />
           </span>
           <b>THE GENT</b>
-        </a>
+        </Link>
 
-        <a href="/login" className="button button-outline">
-          Đăng nhập quản trị
-        </a>
+        <Link to="/" className="button button-outline">
+          <ArrowLeft size={15} />
+          Quay lại trang chủ
+        </Link>
       </header>
 
       <div className="booking-hero">
