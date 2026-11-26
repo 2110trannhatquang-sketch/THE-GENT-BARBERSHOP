@@ -1,39 +1,32 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import Orders from "./pages/Orders";
 import Appointments from "./pages/Appointments";
-import Services from "./pages/Services";
-import Staff from "./pages/Staff";
-import Customers from "./pages/Customers";
-import Invoices from "./pages/Invoices";
-import Reports from "./pages/Reports";
+import Revenue from "./pages/Revenue";
+import Settings from "./pages/Settings";
 import Booking from "./pages/Booking";
 import Login from "./pages/Login";
-
-// Trang chủ khách hàng (sẽ tạo ở bước tiếp theo)
 import Home from "./pages/Home";
 
 export default function App() {
   return (
     <Routes>
-      {/* Website khách hàng */}
+      {/* Trang chủ & Đặt lịch khách hàng */}
       <Route path="/" element={<Home />} />
       <Route path="/booking" element={<Booking />} />
 
-      {/* Đăng nhập */}
+      {/* Đăng nhập Admin */}
       <Route path="/login" element={<Login />} />
 
-      {/* Khu vực quản trị */}
+      {/* Khu vực Quản trị đơn giản 5 mục */}
       <Route element={<Layout />}>
         <Route path="/admin" element={<Dashboard />} />
+        <Route path="/orders" element={<Orders />} />
         <Route path="/appointments" element={<Appointments />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/staff" element={<Staff />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/invoices" element={<Invoices />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route path="/revenue" element={<Revenue />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
