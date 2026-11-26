@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   MapPin,
   Phone,
+  Mail,
   ArrowLeft
 } from "lucide-react";
 import "./Home.css";
@@ -502,6 +503,10 @@ export default function Home() {
               <span className="footer-address-line">
                 <Phone size={14} /> {settings.phone}
               </span>
+              <br />
+              <span className="footer-address-line">
+                <Mail size={14} /> {settings.email}
+              </span>
             </p>
           </div>
 
@@ -518,7 +523,7 @@ export default function Home() {
             <h3>OPENING HOURS</h3>
             <p>{settings.openingDays}</p>
             <p>{settings.openingHours}</p>
-            <span>{settings.email}</span>
+            <span>WELCOME TO THE GENT</span>
           </div>
 
           <div className="footer-column">
