@@ -1,10 +1,12 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Scissors,
   CalendarDays,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft
 } from "lucide-react";
 
 import {
@@ -12,15 +14,25 @@ import {
   initialInvoices,
   initialServices
 } from "../data";
+import { getBarbers, getShopSettings } from "../store";
 
 const APPOINTMENT_KEY = "salon_appointments";
 const INVOICE_KEY = "salon_invoices";
 const SERVICE_KEY = "salon_services";
 
-const STAFF_LIST = [
-  "Trần Quốc Huy",
-  "Phạm Đức Long",
-  "Nguyễn Thành Đạt"
+const getStaffNames = () => {
+  const list = getBarbers().map((b) => b.name);
+  return list.length > 0
+    ? list
+    : ["Trần Quốc Huy", "Phạm Đức Long", "Nguyễn Thành Đạt"];
+};
+
+const TIME_SLOTS_24H = [
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
+  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+  "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
+  "20:00", "20:30"
 ];
 
 const getStoredData = (key, fallback) => {
@@ -216,16 +228,17 @@ export default function Booking() {
   return (
     <div className="booking-page">
       <header className="public-nav">
-        <a className="public-brand" href="/booking">
+        <Link className="public-brand" to="/">
           <span className="brand-mark">
             <Scissors size={21} />
           </span>
           <b>THE GENT</b>
-        </a>
+        </Link>
 
-        <a href="/login" className="button button-outline">
-          Đăng nhập quản trị
-        </a>
+        <Link to="/" className="button button-outline">
+          <ArrowLeft size={15} />
+          Quay lại trang chủ
+        </Link>
       </header>
 
       <div className="booking-hero">
@@ -283,8 +296,8 @@ export default function Booking() {
           </div>
         ) : (
           <form className="form-grid" onSubmit={submit}>
-            <label className="full-field">
-              Họ và tên
+            <label>
+              Họ và tên *
               <input
                 required
                 value={form.name}
@@ -295,8 +308,8 @@ export default function Booking() {
               />
             </label>
 
-            <label className="full-field">
-              Số điện thoại
+            <label>
+              Số điện thoại *
               <input
                 required
                 pattern="[0-9 +.-]{9,15}"
@@ -308,25 +321,35 @@ export default function Booking() {
               />
             </label>
 
-            <label className="full-field">
-              Dịch vụ
-              <select
-                value={form.service}
-                onChange={e =>
-                  setForm({ ...form, service: e.target.value })
-                }
-              >
-                {services.map(service => (
-                  <option key={service.id} value={service.name}>
-                    {service.name} -{" "}
-                    {new Intl.NumberFormat("vi-VN").format(service.price)} ₫
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="full-field booking-field-group">
+              <span className="booking-field-label">Chọn dịch vụ *</span>
+              <div className="booking-service-grid">
+                {services.map(service => {
+                  const isActive = form.service === service.name;
+                  return (
+                    <button
+                      type="button"
+                      key={service.id}
+                      className={`booking-service-option ${isActive ? "active" : ""}`}
+                      onClick={() =>
+                        setForm({ ...form, service: service.name })
+                      }
+                    >
+                      <div className="booking-service-top">
+                        <b>{service.name}</b>
+                        <span>{service.duration} phút</span>
+                      </div>
+                      <strong>
+                        {new Intl.NumberFormat("vi-VN").format(service.price)} ₫
+                      </strong>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <label className="full-field">
-              Nhân viên
+              Chọn thợ cắt tóc
               <select
                 value={form.staff}
                 onChange={e =>
@@ -335,7 +358,7 @@ export default function Booking() {
               >
                 <option>Không chọn thợ</option>
 
-                {STAFF_LIST.map(staff => (
+                {getStaffNames().map(staff => (
                   <option key={staff} value={staff}>
                     {staff}
                   </option>
@@ -344,7 +367,7 @@ export default function Booking() {
             </label>
 
             <label>
-              Ngày đặt
+              Ngày đặt *
               <input
                 type="date"
                 min={getToday()}
@@ -357,36 +380,48 @@ export default function Booking() {
             </label>
 
             <label>
-              Giờ đặt (08:00–21:00)
-              <input
-                type="time"
-                min="08:00"
-                max="20:59"
+              Giờ đặt (24h: 08:00–20:30) *
+              <select
                 required
                 value={form.time}
                 onChange={e =>
                   setForm({ ...form, time: e.target.value })
                 }
-              />
+              >
+                <option value="">-- Chọn giờ cắt (24h) --</option>
+                {TIME_SLOTS_24H.map(slot => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
             </label>
 
             {selectedService && (
-              <div className="full-field">
-                <b>
-                  Giá dịch vụ:{" "}
-                  {new Intl.NumberFormat("vi-VN").format(
-                    selectedService.price
-                  )}{" "}
-                  ₫
-                </b>
-                <p className="muted-label">
-                  Thời gian dự kiến: {selectedService.duration} phút
-                </p>
+              <div className="booking-price-card full-field">
+                <div>
+                  <span className="booking-price-eyebrow">CHI TIẾT DỊCH VỤ</span>
+                  <b>{selectedService.name}</b>
+                  <small>
+                    <Clock size={13} /> Thời gian dự kiến: {selectedService.duration} phút
+                    {form.staff !== "Không chọn thợ" ? ` · Thợ: ${form.staff}` : " · Tự động sắp xếp thợ"}
+                  </small>
+                </div>
+
+                <div className="booking-price-right">
+                  <span>GIÁ DỊCH VỤ</span>
+                  <strong>
+                    {new Intl.NumberFormat("vi-VN").format(
+                      selectedService.price
+                    )}{" "}
+                    ₫
+                  </strong>
+                </div>
               </div>
             )}
 
             {error && (
-              <p className="full-field" style={{ color: "#dc2626" }}>
+              <p className="full-field" style={{ color: "#dc2626", margin: 0, fontSize: 12 }}>
                 {error}
               </p>
             )}
@@ -397,7 +432,7 @@ export default function Booking() {
               nhân viên tiếp nhận.
             </p>
 
-            <button className="button button-dark full-field">
+            <button className="button button-dark full-field" style={{ height: 44, fontSize: 13 }}>
               Gửi yêu cầu đặt lịch
             </button>
           </form>
@@ -405,7 +440,7 @@ export default function Booking() {
       </div>
 
       <footer className="public-footer">
-        THE GENT BARBERSHOP · 08:00 – 21:00 · © 2026
+        {getShopSettings().shopName} · {getShopSettings().openingHours} · © 2026
       </footer>
     </div>
   );

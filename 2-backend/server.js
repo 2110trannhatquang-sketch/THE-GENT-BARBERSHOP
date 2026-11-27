@@ -11,9 +11,12 @@ const app = express();
 const appointmentRoutes = require("./routes/appointments");
 const invoiceRoutes = require("./routes/invoices");
 const authRoutes = require("./routes/auth");
+const productRoutes = require("./routes/products");
+const orderRoutes = require("./routes/orders");
+const settingsRoutes = require("./routes/settings");
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 app.use((req, res, next) => {
   if (req.method === "POST" && req.originalUrl === "/api/appointments") {
     console.log("CO REQUEST TAO LICH:", req.body);
@@ -25,6 +28,9 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // Kiểm tra server
 app.get("/", (req, res) => {
