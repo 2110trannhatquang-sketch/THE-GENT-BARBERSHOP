@@ -10,7 +10,11 @@ import {
   MapPin,
   Phone,
   Mail,
-  ArrowLeft
+  ArrowLeft,
+  Search,
+  CalendarDays,
+  Scissors,
+  Package
 } from "lucide-react";
 import "./Home.css";
 import useScrollReveal from "../hooks/useScrollReveal";
@@ -21,8 +25,19 @@ import {
   getCart,
   saveCart,
   createOrder,
-  PAYMENT_METHOD_LABELS
+  getOrders,
+  getAppointments,
+  PAYMENT_METHOD_LABELS,
+  ORDER_STATUS_LABELS
 } from "../store";
+
+const APPOINTMENT_STATUS_LABELS = {
+  PENDING: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận",
+  IN_PROGRESS: "Đang cắt",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy"
+};
 
 export default function Home() {
   useScrollReveal();
@@ -33,6 +48,13 @@ export default function Home() {
 
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState("cart"); // "cart" | "checkout" | "success"
+  const [lookupOpen, setLookupOpen] = useState(false);
+  const [lookupQuery, setLookupQuery] = useState("");
+  const [lookupResult, setLookupResult] = useState({
+    searched: false,
+    orders: [],
+    appointments: []
+  });
   const [toast, setToast] = useState("");
   const [createdOrder, setCreatedOrder] = useState(null);
   const [formError, setFormError] = useState("");
@@ -122,6 +144,39 @@ export default function Home() {
     setCartOpen(true);
   };
 
+  const runLookup = (rawQuery) => {
+    const q = String(rawQuery || "").trim();
+    if (!q) return;
+
+    const qLower = q.toLowerCase();
+    const qDigits = q.replace(/\D/g, "");
+
+    const matchedOrders = getOrders().filter((o) => {
+      const phoneDigits = String(o.phone || "").replace(/\D/g, "");
+      const codeMatch = String(o.id || "").toLowerCase() === qLower;
+      const phoneMatch = qDigits.length >= 4 && phoneDigits.includes(qDigits);
+      return codeMatch || phoneMatch;
+    });
+
+    const matchedAppointments = getAppointments().filter((a) => {
+      const phoneDigits = String(a.phone || "").replace(/\D/g, "");
+      const codeMatch = String(a.id || "").toLowerCase() === qLower;
+      const phoneMatch = qDigits.length >= 4 && phoneDigits.includes(qDigits);
+      return codeMatch || phoneMatch;
+    });
+
+    setLookupResult({
+      searched: true,
+      orders: matchedOrders,
+      appointments: matchedAppointments
+    });
+  };
+
+  const handleLookupSubmit = (e) => {
+    e.preventDefault();
+    runLookup(lookupQuery);
+  };
+
   const handleCheckoutSubmit = (e) => {
     e.preventDefault();
     setFormError("");
@@ -206,6 +261,19 @@ export default function Home() {
         </nav>
 
         <div className="home-header-actions">
+          <button
+            type="button"
+            className="home-cart-btn"
+            onClick={() => {
+              setLookupOpen(true);
+              if (lookupQuery.trim()) runLookup(lookupQuery);
+            }}
+            aria-label="Tra cứu đơn hàng và lịch hẹn"
+          >
+            <Search size={16} />
+            <span>Tra cứu đơn / Lịch</span>
+          </button>
+
           <button
             type="button"
             className="home-cart-btn"
@@ -815,6 +883,142 @@ export default function Home() {
                 </button>
               </div>
             )}
+          </aside>
+        </div>
+      )}
+
+      {/* LOOKUP DRAWER - TRA CỨU ĐƠN HÀNG & LỊCH HẸN */}
+      {lookupOpen && (
+        <div className="cart-backdrop" onClick={() => setLookupOpen(false)}>
+          <aside className="cart-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="cart-drawer-head">
+              <div>
+                <h3>Tra cứu Đơn hàng & Lịch hẹn</h3>
+                <small>Nhập số điện thoại hoặc mã đơn / mã lịch để kiểm tra</small>
+              </div>
+              <button
+                type="button"
+                className="cart-close-btn"
+                onClick={() => setLookupOpen(false)}
+                aria-label="Đóng tra cứu"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="cart-drawer-body">
+              <form className="lookup-form" onSubmit={handleLookupSubmit}>
+                <input
+                  type="text"
+                  placeholder="Nhập SĐT (vd: 0908 123 456) hoặc mã DH001 / AP001"
+                  value={lookupQuery}
+                  onChange={(e) => setLookupQuery(e.target.value)}
+                  required
+                />
+                <button type="submit" className="lookup-submit-btn">
+                  <Search size={16} />
+                  Tra cứu
+                </button>
+              </form>
+
+              {!lookupResult.searched ? (
+                <div className="lookup-hint">
+                  Nhập số điện thoại bạn đã dùng khi đặt hàng hoặc đặt lịch cắt tóc để xem trạng thái mới nhất từ cửa hàng.
+                </div>
+              ) : lookupResult.orders.length === 0 &&
+                lookupResult.appointments.length === 0 ? (
+                <div className="cart-empty" style={{ padding: "40px 12px" }}>
+                  <Search size={36} />
+                  <p>
+                    Không tìm thấy đơn hàng hoặc lịch hẹn nào khớp với{" "}
+                    <b>"{lookupQuery}"</b>.
+                  </p>
+                </div>
+              ) : (
+                <div className="lookup-sections">
+                  {lookupResult.orders.length > 0 && (
+                    <div className="lookup-group">
+                      <h4>
+                        <Package size={15} /> Đơn hàng sản phẩm (
+                        {lookupResult.orders.length})
+                      </h4>
+                      {lookupResult.orders.map((order) => (
+                        <div className="lookup-card" key={order.id}>
+                          <div className="lookup-card-top">
+                            <b>#{order.id}</b>
+                            <span
+                              className={`lookup-badge status-${String(
+                                order.status
+                              ).toLowerCase()}`}
+                            >
+                              {ORDER_STATUS_LABELS[order.status] || order.status}
+                            </span>
+                          </div>
+                          <div className="lookup-card-meta">
+                            <span>Khách: {order.customerName}</span>
+                            <span>Địa chỉ: {order.address}</span>
+                          </div>
+                          <div className="lookup-card-items">
+                            {order.items.map((item, idx) => (
+                              <div key={idx}>
+                                {item.name} × {item.quantity}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="lookup-card-foot">
+                            <small>
+                              {PAYMENT_METHOD_LABELS[order.paymentMethod] ||
+                                order.paymentMethod}
+                            </small>
+                            <strong>{formatMoney(order.total)}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {lookupResult.appointments.length > 0 && (
+                    <div className="lookup-group">
+                      <h4>
+                        <CalendarDays size={15} /> Lịch hẹn cắt tóc (
+                        {lookupResult.appointments.length})
+                      </h4>
+                      {lookupResult.appointments.map((appt) => (
+                        <div className="lookup-card" key={appt.id}>
+                          <div className="lookup-card-top">
+                            <b>#{appt.id}</b>
+                            <span
+                              className={`lookup-badge status-${String(
+                                appt.status
+                              ).toLowerCase()}`}
+                            >
+                              {APPOINTMENT_STATUS_LABELS[appt.status] ||
+                                appt.status}
+                            </span>
+                          </div>
+                          <div className="lookup-card-meta">
+                            <span>Dịch vụ: {appt.service}</span>
+                            <span>
+                              <Scissors size={12} /> Thợ cắt: <b>{appt.staff}</b>
+                            </span>
+                            <span>
+                              Thời gian: {appt.time} ·{" "}
+                              {appt.date
+                                ? appt.date.split("-").reverse().join("/")
+                                : ""}
+                            </span>
+                          </div>
+                          <div className="lookup-card-foot">
+                            <small>Khách: {appt.customer}</small>
+                            <strong>{formatMoney(appt.amount)}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </aside>
         </div>
       )}
