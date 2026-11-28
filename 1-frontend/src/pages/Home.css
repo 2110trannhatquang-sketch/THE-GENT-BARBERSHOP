@@ -67,12 +67,13 @@
 .home-nav {
   display: flex;
   align-items: center;
-  gap: 38px;
+  gap: 24px;
+  white-space: nowrap;
 }
 
 .home-nav a {
   font-size: 12px;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   color: #c9c3b9;
   transition: color .3s ease;
 }
@@ -82,16 +83,21 @@
 }
 
 .home-booking-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
   border: 1px solid var(--gent-gold);
-  padding: 13px 22px;
+  padding: 0 18px;
   font-size: 11px;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   color: var(--gent-gold) !important;
+  white-space: nowrap;
   transition: .3s ease;
 }
 
 .home-booking-btn span {
-  margin-left: 15px;
+  margin-left: 10px;
 }
 
 .home-booking-btn:hover {
@@ -1219,21 +1225,25 @@
 .home-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .home-cart-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 7px;
+  height: 40px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.04);
   color: var(--gent-cream);
-  padding: 11px 16px;
+  padding: 0 14px;
   font-size: 12px;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.4px;
   cursor: pointer;
+  white-space: nowrap;
   transition: 0.25s ease;
 }
 
@@ -1257,12 +1267,17 @@
 }
 
 .home-admin-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
   font-size: 11px;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #aaa39a !important;
-  padding: 10px 12px;
+  padding: 0 13px;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
   transition: 0.25s ease;
 }
 

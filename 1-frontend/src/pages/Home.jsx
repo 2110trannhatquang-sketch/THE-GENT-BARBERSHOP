@@ -264,6 +264,7 @@ export default function Home() {
           <button
             type="button"
             className="home-cart-btn"
+            title="Tra cứu đơn hàng và lịch hẹn"
             onClick={() => {
               setLookupOpen(true);
               if (lookupQuery.trim()) runLookup(lookupQuery);
@@ -271,7 +272,7 @@ export default function Home() {
             aria-label="Tra cứu đơn hàng và lịch hẹn"
           >
             <Search size={16} />
-            <span>Tra cứu đơn / Lịch</span>
+            <span>Tra cứu</span>
           </button>
 
           <button
