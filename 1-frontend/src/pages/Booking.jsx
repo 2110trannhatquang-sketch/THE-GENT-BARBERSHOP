@@ -10,11 +10,10 @@ import {
 } from "lucide-react";
 
 import {
-  initialAppointments,
   initialInvoices,
   initialServices
 } from "../data";
-import { getBarbers, getShopSettings } from "../store";
+import { getAppointments, getBarbers, getShopSettings } from "../store";
 
 const APPOINTMENT_KEY = "salon_appointments";
 const INVOICE_KEY = "salon_invoices";
@@ -63,6 +62,34 @@ const getToday = () => {
   const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+};
+
+const toMinutes = (hhmm) => {
+  if (!hhmm || !hhmm.includes(":")) return 0;
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+};
+
+const isBarberBusyAtSlot = (appointments, services, barberName, date, slotTime, duration) => {
+  if (!date || !slotTime) return false;
+  const newStart = toMinutes(slotTime);
+  const newEnd = newStart + duration;
+
+  return appointments.some((item) => {
+    if (
+      item.staff !== barberName ||
+      item.date !== date ||
+      item.status === "CANCELLED"
+    ) {
+      return false;
+    }
+    const oldStart = toMinutes(item.time);
+    const oldDuration = Number(
+      services.find((s) => s.name === item.service)?.duration || 30
+    );
+    const oldEnd = oldStart + oldDuration;
+    return newStart < oldEnd && oldStart < newEnd;
+  });
 };
 
 export default function Booking() {
@@ -115,50 +142,31 @@ export default function Booking() {
     const amount = Number(selectedService.price || 0);
     const duration = Number(selectedService.duration || 30);
 
-    const appointments = getStoredData(
-      APPOINTMENT_KEY,
-      initialAppointments
-    );
+    const appointments = getAppointments();
+    const staffNames = getStaffNames();
 
     const invoices = getStoredData(
       INVOICE_KEY,
       initialInvoices
     );
 
-    // Kiểm tra trùng lịch nếu khách chọn thợ cụ thể
+    let assignedStaff = form.staff;
+
+    // Kiểm tra trùng lịch theo thợ
     if (form.staff !== "Không chọn thợ") {
-      const newStart =
-        Number(form.time.slice(0, 2)) * 60 +
-        Number(form.time.slice(3, 5));
-
-      const newEnd = newStart + duration;
-
-      const hasConflict = appointments.some(item => {
-        if (
-          item.staff !== form.staff ||
-          item.date !== form.date ||
-          ["CANCELLED"].includes(item.status)
-        ) {
-          return false;
-        }
-
-        const oldStart =
-          Number(item.time.slice(0, 2)) * 60 +
-          Number(item.time.slice(3, 5));
-
-        const oldDuration = Number(
-          services.find(s => s.name === item.service)?.duration || 30
-        );
-
-        const oldEnd = oldStart + oldDuration;
-
-        return newStart < oldEnd && oldStart < newEnd;
-      });
-
-      if (hasConflict) {
-        setError("Nhân viên đã có lịch trong khoảng thời gian này. Vui lòng chọn giờ khác.");
+      if (isBarberBusyAtSlot(appointments, services, form.staff, form.date, form.time, duration)) {
+        setError(`Thợ ${form.staff} đã có lịch trong khung giờ này. Vui lòng chọn giờ khác hoặc thợ khác.`);
         return;
       }
+    } else {
+      const freeBarber = staffNames.find(
+        (name) => !isBarberBusyAtSlot(appointments, services, name, form.date, form.time, duration)
+      );
+      if (!freeBarber) {
+        setError("Tất cả thợ đều bận trong khung giờ này. Vui lòng chọn giờ khác.");
+        return;
+      }
+      assignedStaff = freeBarber;
     }
 
     // Tạo mã lịch hẹn và mã hóa đơn
@@ -171,7 +179,7 @@ export default function Booking() {
       customer: form.name.trim(),
       phone: form.phone.trim(),
       service: form.service,
-      staff: form.staff,
+      staff: assignedStaff,
       date: form.date,
       time: form.time,
       status: "PENDING",
@@ -353,7 +361,7 @@ export default function Booking() {
               <select
                 value={form.staff}
                 onChange={e =>
-                  setForm({ ...form, staff: e.target.value })
+                  setForm({ ...form, staff: e.target.value, time: "" })
                 }
               >
                 <option>Không chọn thợ</option>
@@ -374,7 +382,7 @@ export default function Booking() {
                 required
                 value={form.date}
                 onChange={e =>
-                  setForm({ ...form, date: e.target.value })
+                  setForm({ ...form, date: e.target.value, time: "" })
                 }
               />
             </label>
@@ -389,11 +397,39 @@ export default function Booking() {
                 }
               >
                 <option value="">-- Chọn giờ cắt (24h) --</option>
-                {TIME_SLOTS_24H.map(slot => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
+                {TIME_SLOTS_24H.map(slot => {
+                  const currentAppointments = getAppointments();
+                  const duration = Number(selectedService?.duration || 30);
+                  const staffNames = getStaffNames();
+                  const isBusy = form.date
+                    ? form.staff !== "Không chọn thợ"
+                      ? isBarberBusyAtSlot(
+                          currentAppointments,
+                          services,
+                          form.staff,
+                          form.date,
+                          slot,
+                          duration
+                        )
+                      : staffNames.every((name) =>
+                          isBarberBusyAtSlot(
+                            currentAppointments,
+                            services,
+                            name,
+                            form.date,
+                            slot,
+                            duration
+                          )
+                        )
+                    : false;
+
+                  return (
+                    <option key={slot} value={slot} disabled={isBusy}>
+                      {slot}
+                      {isBusy ? " (Thợ đang bận)" : ""}
+                    </option>
+                  );
+                })}
               </select>
             </label>
 

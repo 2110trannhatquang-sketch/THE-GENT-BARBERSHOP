@@ -76,11 +76,49 @@ export default function Appointments() {
     saveAppointments(next);
   };
 
+  const toMinutes = (hhmm) => {
+    if (!hhmm || !hhmm.includes(":")) return 0;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const findBarberConflict = (staffName, date, slotTime, duration) => {
+    if (!staffName || !date || !slotTime) return null;
+    const newStart = toMinutes(slotTime);
+    const newEnd = newStart + duration;
+    return items.find((item) => {
+      if (
+        item.staff !== staffName ||
+        item.date !== date ||
+        item.status === "CANCELLED"
+      ) {
+        return false;
+      }
+      const oldStart = toMinutes(item.time);
+      const oldDuration = Number(
+        activeServices.find((s) => s.name === item.service)?.duration || 30
+      );
+      const oldEnd = oldStart + oldDuration;
+      return newStart < oldEnd && oldStart < newEnd;
+    });
+  };
+
   const handleAddAppointment = (e) => {
     e.preventDefault();
     if (!form.customer.trim() || !form.phone.trim()) return;
 
     const svc = activeServices.find((s) => s.name === form.service);
+    const duration = Number(svc?.duration || 30);
+    const assignedStaff = form.staff || barbers[0]?.name || "Chưa phân công";
+
+    const conflict = findBarberConflict(assignedStaff, form.date, form.time, duration);
+    if (conflict) {
+      alert(
+        `Thợ ${assignedStaff} đã có lịch với "${conflict.customer}" vào lúc ${conflict.time}. Vui lòng chọn giờ khác hoặc thợ khác!`
+      );
+      return;
+    }
+
     const nextNum =
       items.reduce((max, item) => {
         const n = Number(String(item.id).replace("AP", ""));
@@ -92,7 +130,7 @@ export default function Appointments() {
       customer: form.customer.trim(),
       phone: form.phone.trim(),
       service: form.service,
-      staff: form.staff || barbers[0]?.name || "Chưa phân công",
+      staff: assignedStaff,
       date: form.date,
       time: form.time,
       status: "CONFIRMED",
@@ -507,11 +545,20 @@ export default function Appointments() {
                   "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
                   "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
                   "20:00", "20:30"
-                ].map((slot) => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
+                ].map((slot) => {
+                  const svcDuration = Number(
+                    activeServices.find((s) => s.name === form.service)?.duration || 30
+                  );
+                  const isBusy = Boolean(
+                    findBarberConflict(form.staff, form.date, slot, svcDuration)
+                  );
+                  return (
+                    <option key={slot} value={slot} disabled={isBusy}>
+                      {slot}
+                      {isBusy ? " (Trùng lịch)" : ""}
+                    </option>
+                  );
+                })}
               </select>
             </label>
 
